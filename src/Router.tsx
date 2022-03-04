@@ -9,6 +9,7 @@ import V2UserProvider from 'providers/v2/UserProvider'
 import Loading from 'components/shared/Loading'
 import V1CurrencyProvider from 'providers/v1/V1CurrencyProvider'
 import V2EntryGuard from 'components/v2/V2EntryGuard'
+import V2Projects from 'components/v2/V2Projects'
 
 const V2Create = lazy(() => import('components/v2/V2Create'))
 const V2DashboardGateway = lazy(
@@ -53,6 +54,11 @@ export default function Router() {
         </Route>
         <Route path="/p/:handle">
           <V1Dashboard />
+        </Route>
+        <Route path="/v2/projects">
+          <Suspense fallback={<Loading />}>
+            <V2Projects />
+          </Suspense>
         </Route>
         <Route path="/v2/create">
           <V2EntryGuard>
