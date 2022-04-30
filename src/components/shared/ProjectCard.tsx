@@ -21,12 +21,14 @@ import { archivedProjectIds } from '../../constants/v1/archivedProjects'
 
 type ProjectCardProject = Pick<
   Project,
+  | 'id'
   | 'handle'
   | 'metadataUri'
   | 'totalPaid'
   | 'createdAt'
   | 'terminal'
   | 'projectId'
+  | 'cv'
 >
 
 export default function ProjectCard({
@@ -53,12 +55,14 @@ export default function ProjectCard({
       ? {
           entity: 'project',
           keys: [
+            'id',
             'handle',
             'metadataUri',
             'totalPaid',
             'createdAt',
             'terminal',
             'projectId',
+            'cv',
           ],
           where: {
             key: 'projectId',
@@ -100,8 +104,12 @@ export default function ProjectCard({
         cursor: 'pointer',
         overflow: 'hidden',
       }}
-      key={_project?.handle}
-      to={`/p/${_project?.handle}`}
+      key={_project.id}
+      to={
+        _project.cv === 2
+          ? `/v2/p/${_project.projectId}`
+          : `/p/${_project?.handle}`
+      }
     >
       {metadata ? (
         <div style={cardStyle} className="clickable-border">
@@ -133,18 +141,25 @@ export default function ProjectCard({
             </h2>
 
             <div>
-              <span style={{ color: colors.text.primary, fontWeight: 500 }}>
-                @{_project?.handle}
-              </span>
+              {_project?.handle && (
+                <span
+                  style={{
+                    color: colors.text.primary,
+                    fontWeight: 500,
+                    marginRight: 10,
+                  }}
+                >
+                  @{_project?.handle}
+                </span>
+              )}
               <span
                 style={{
-                  marginLeft: 10,
                   color: colors.text.tertiary,
                   fontSize: '0.7rem',
                   fontWeight: 500,
                 }}
               >
-                V{terminalVersion}
+                V{terminalVersion ?? _project.cv}
               </span>
             </div>
 
