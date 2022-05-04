@@ -2,18 +2,16 @@ import { Col, Row, Space } from 'antd'
 import PayInputGroup from 'components/shared/inputs/Pay/PayInputGroup'
 import ProjectHeader from 'components/shared/ProjectHeader'
 import { V2ProjectContext } from 'contexts/v2/projectContext'
-
 import { useContext } from 'react'
-
 import { decodeV2FundingCycleMetadata } from 'utils/v2/fundingCycle'
-
 import { weightedAmount } from 'utils/v2/math'
 
-import V2PayButton from './V2PayButton'
-import V2ProjectHeaderActions from './V2ProjectHeaderActions'
+import ProjectActivity from './ProjectActivity'
 import TreasuryStats from './TreasuryStats'
 import V2FundingCycleSection from './V2FundingCycleSection'
 import V2ManageTokensSection from './V2ManageTokensSection'
+import V2PayButton from './V2PayButton'
+import V2ProjectHeaderActions from './V2ProjectHeaderActions'
 
 const GUTTER_PX = 40
 
@@ -65,6 +63,10 @@ export default function V2Project({
             <V2ManageTokensSection />
             <V2FundingCycleSection expandCard={expandFundingCycleCard} />
           </Space>
+        </Col>
+
+        <Col md={colSizeMd} xs={24}>
+          <ProjectActivity />
         </Col>
       </Row>
     </Space>
