@@ -273,6 +273,7 @@ export default function V2ProjectReconfigureModal({
         onConfirmed() {
           setReconfigureTxLoading(false)
           onOk()
+          window.location.reload()
         },
       },
     )
