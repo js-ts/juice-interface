@@ -86,10 +86,12 @@ export const FundingDrawersSubtitles = (
 export default function V2ProjectReconfigureModal({
   visible,
   onOk,
+  onCancel,
   hideProjectDetails,
 }: {
   visible: boolean
-  onOk: () => void
+  onOk: VoidFunction
+  onCancel: VoidFunction
   hideProjectDetails?: boolean
 }) {
   const {
@@ -273,7 +275,6 @@ export default function V2ProjectReconfigureModal({
         onConfirmed() {
           setReconfigureTxLoading(false)
           onOk()
-          window.location.reload()
         },
       },
     )
@@ -307,7 +308,7 @@ export default function V2ProjectReconfigureModal({
       title={<Trans>Project configuration</Trans>}
       visible={visible}
       onOk={reconfigureFundingCycle}
-      onCancel={onOk}
+      onCancel={onCancel}
       okText={t`Deploy new project configuration`}
       okButtonProps={{ disabled: !fundingHasSavedChanges }}
       confirmLoading={reconfigureTxLoading}
