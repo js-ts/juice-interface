@@ -1539,6 +1539,10 @@ msgstr "Não estabelecido"
 msgid "Note"
 msgstr "Nota"
 
+#: src/components/Projects/index.tsx
+msgid "Note that v2 projects do not currently appear in these results."
+msgstr ""
+
 #: src/components/v1/V1Project/ArchiveV1Project.tsx
 msgid "Note:"
 msgstr "Nota:"

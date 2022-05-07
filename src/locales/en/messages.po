@@ -1534,6 +1534,10 @@ msgstr ""
 msgid "Note"
 msgstr "Note"
 
+#: src/components/Projects/index.tsx
+msgid "Note that v2 projects do not currently appear in these results."
+msgstr "Note that v2 projects do not currently appear in these results."
+
 #: src/components/v1/V1Project/ArchiveV1Project.tsx
 msgid "Note:"
 msgstr "Note:"
