@@ -53,6 +53,8 @@ import { isEqual } from 'lodash'
 
 import { Split } from 'models/v2/splits'
 
+import { V2_CURRENCY_ETH } from 'utils/v2/currency'
+
 import { V2ReconfigureFundingDrawer } from './drawers/V2ReconfigureFundingDrawer'
 import { V2ReconfigureProjectDetailsDrawer } from './drawers/V2ReconfigureProjectDetailsDrawer'
 import { ETH_TOKEN_ADDRESS } from 'constants/v2/juiceboxTokens'
@@ -66,9 +68,11 @@ const DrawerUnsavedChangesModal = UnsavedChangesModal
 
 function ReconfigureButton({
   title,
+  reconfigureHasChanges,
   onClick,
 }: {
   title: string
+  reconfigureHasChanges: boolean
   onClick: () => void
 }) {
   const { colors, radii } = useContext(ThemeContext).theme
@@ -82,7 +86,11 @@ function ReconfigureButton({
         padding: 10,
         fontWeight: 500,
         borderRadius: radii.sm,
-        border: '1px solid ' + colors.stroke.action.secondary,
+        border:
+          '1px solid ' +
+          (reconfigureHasChanges
+            ? colors.stroke.action.primary
+            : colors.stroke.action.secondary),
       }}
       onClick={onClick}
     >
@@ -157,8 +165,8 @@ export default function V2ProjectReconfigureModal({
     fundingCycleData: SerializedV2FundingCycleData
     fundingCycleMetadata: SerializedV2FundingCycleMetadata
     payoutGroupedSplits: {
-      payoutGroupedSplits: Split[] | undefined
-      reservedTokensGroupedSplits: Split[] | undefined
+      payoutGroupedSplits: Split[]
+      reservedTokensGroupedSplits: Split[]
     }
   }>()
 
@@ -243,12 +251,17 @@ export default function V2ProjectReconfigureModal({
     let fundAccessConstraint: SerializedV2FundAccessConstraint | undefined =
       undefined
     if (effectiveDistributionLimit) {
+      const distributionLimitCurrency =
+        effectiveDistributionLimitCurrency?.toString() ??
+        V2_CURRENCY_ETH.toString()
       fundAccessConstraint = {
         terminal: contracts?.JBETHPaymentTerminal.address ?? '',
         token: ETH_TOKEN_ADDRESS,
         distributionLimit: fromWad(effectiveDistributionLimit),
         distributionLimitCurrency:
-          effectiveDistributionLimitCurrency?.toString() ?? 'ETH',
+          distributionLimitCurrency === '0'
+            ? V2_CURRENCY_ETH.toString()
+            : distributionLimitCurrency,
         overflowAllowance: '0', // nothing for the time being.
         overflowAllowanceCurrency: '0',
       }
@@ -305,8 +318,8 @@ export default function V2ProjectReconfigureModal({
       fundingCycleData: editingFundingCycleData,
       fundingCycleMetadata: editingFundingCycleMetadata,
       payoutGroupedSplits: {
-        payoutGroupedSplits: effectivePayoutSplits,
-        reservedTokensGroupedSplits: effectiveReservedTokensSplits,
+        payoutGroupedSplits: effectivePayoutSplits ?? [],
+        reservedTokensGroupedSplits: effectiveReservedTokensSplits ?? [],
       },
     })
   }, [
@@ -332,6 +345,10 @@ export default function V2ProjectReconfigureModal({
     useEditingV2FundAccessConstraintsSelector()
 
   const fundingHasSavedChanges = useMemo(() => {
+    if (!initialEditingData) {
+      // Nothing to compare so return false
+      return false
+    }
     const editedChanges: typeof initialEditingData = {
       fundAccessConstraints: editingFundAccessConstraints.map(
         serializeFundAccessConstraint,
@@ -425,6 +442,104 @@ export default function V2ProjectReconfigureModal({
     setRulesDrawerVisible(false)
   }
 
+  const fundingDrawerHasSavedChanges = () => {
+    const fundingCycleData = serializeV2FundingCycleData(
+      editingFundingCycleData,
+    )
+    const fundAccessConstraints = editingFundAccessConstraints.length
+      ? serializeFundAccessConstraint(editingFundAccessConstraints?.[0])
+      : undefined
+    const payoutGroupedSplits = editingPayoutGroupedSplits.splits
+
+    if (!fundAccessConstraints || !initialEditingData) {
+      return false
+    }
+    const durationUpdated =
+      fundingCycleData.duration !== initialEditingData.fundingCycleData.duration
+    const distributionLimitUpdated =
+      fundAccessConstraints.distributionLimit !==
+      initialEditingData.fundAccessConstraints?.[0].distributionLimit
+    const distributionLimitCurrencyUpdated =
+      fundAccessConstraints.distributionLimitCurrency !==
+      initialEditingData.fundAccessConstraints?.[0].distributionLimitCurrency
+    const payoutGroupedSplitsUpdated = !isEqual(
+      payoutGroupedSplits,
+      initialEditingData.payoutGroupedSplits?.payoutGroupedSplits ?? [],
+    )
+    return (
+      durationUpdated ||
+      distributionLimitUpdated ||
+      distributionLimitCurrencyUpdated ||
+      payoutGroupedSplitsUpdated
+    )
+  }
+
+  const tokenDrawerHasSavedChanges = () => {
+    const fundingCycleData = serializeV2FundingCycleData(
+      editingFundingCycleData,
+    )
+    const fundingCycleMetadata = serializeV2FundingCycleMetadata(
+      editingFundingCycleMetadata,
+    )
+    const fundAccessConstraints = editingFundAccessConstraints.length
+      ? serializeFundAccessConstraint(editingFundAccessConstraints?.[0])
+      : undefined
+    const reservedTokensGroupedSplits =
+      editingReservedTokensGroupedSplits.splits
+
+    if (!fundAccessConstraints || !initialEditingData) {
+      return false
+    }
+
+    const reservedRateUpdated =
+      fundingCycleMetadata.reservedRate !==
+      initialEditingData.fundingCycleMetadata.reservedRate
+    const reservedTokensGroupedSplitsUpdated = !isEqual(
+      reservedTokensGroupedSplits,
+      initialEditingData.payoutGroupedSplits.reservedTokensGroupedSplits ?? [],
+    )
+    const discountRateUpdated =
+      fundingCycleData.discountRate !==
+      initialEditingData.fundingCycleData.discountRate
+    const redemptionRateUpdated =
+      fundingCycleMetadata.redemptionRate !==
+      initialEditingData.fundingCycleMetadata.redemptionRate
+
+    return (
+      reservedRateUpdated ||
+      reservedTokensGroupedSplitsUpdated ||
+      discountRateUpdated ||
+      redemptionRateUpdated
+    )
+  }
+
+  const rulesDrawerHasSavedChanges = () => {
+    const fundingCycleData = serializeV2FundingCycleData(
+      editingFundingCycleData,
+    )
+    const fundingCycleMetadata = serializeV2FundingCycleMetadata(
+      editingFundingCycleMetadata,
+    )
+    const fundAccessConstraints = editingFundAccessConstraints.length
+      ? serializeFundAccessConstraint(editingFundAccessConstraints?.[0])
+      : undefined
+
+    if (!fundAccessConstraints || !initialEditingData) {
+      return false
+    }
+
+    const pausePaymentsUpdated =
+      fundingCycleMetadata.pausePay !==
+      initialEditingData.fundingCycleMetadata.pausePay
+    const allowMintingUpdated =
+      fundingCycleMetadata.allowMinting !==
+      initialEditingData.fundingCycleMetadata.allowMinting
+    const ballotUpdated =
+      fundingCycleData.ballot !== initialEditingData.fundingCycleData.ballot
+
+    return pausePaymentsUpdated || allowMintingUpdated || ballotUpdated
+  }
+
   return (
     <Modal
       title={<Trans>Project configuration</Trans>}
@@ -450,6 +565,7 @@ export default function V2ProjectReconfigureModal({
               </Trans>
             </p>
             <ReconfigureButton
+              reconfigureHasChanges={false}
               title={t`Project details`}
               onClick={() => setProjectDetailsDrawerVisible(true)}
             />
@@ -464,14 +580,17 @@ export default function V2ProjectReconfigureModal({
         </p>
         <ReconfigureButton
           title={t`Distribution limit, duration and payouts`}
+          reconfigureHasChanges={fundingDrawerHasSavedChanges()}
           onClick={() => setFundingDrawerVisible(true)}
         />
         <ReconfigureButton
           title={t`Token`}
+          reconfigureHasChanges={tokenDrawerHasSavedChanges()}
           onClick={() => setTokenDrawerVisible(true)}
         />
         <ReconfigureButton
           title={t`Rules`}
+          reconfigureHasChanges={rulesDrawerHasSavedChanges()}
           onClick={() => setRulesDrawerVisible(true)}
         />
       </Space>
